@@ -1,11 +1,12 @@
-import { useState } from 'react';
-import { X } from 'lucide-react';
-import { Difficulty } from '../types';
+import { useState, useEffect } from 'react';
+import { X, Plus } from 'lucide-react';
+import { Difficulty, Topic } from '../types';
+import { supabase } from '../lib/supabase';
 
 interface AddQuestionModalProps {
   platformName: string;
   onClose: () => void;
-  onAdd: (questionNo: string, link: string, description: string, difficulty: Difficulty) => void;
+  onAdd: (questionNo: string, link: string, description: string, difficulty: Difficulty, topic: string) => void;
 }
 
 export default function AddQuestionModal({ platformName, onClose, onAdd }: AddQuestionModalProps) {
@@ -13,15 +14,57 @@ export default function AddQuestionModal({ platformName, onClose, onAdd }: AddQu
   const [link, setLink] = useState('');
   const [description, setDescription] = useState('');
   const [difficulty, setDifficulty] = useState<Difficulty>('medium');
+  const [topic, setTopic] = useState('');
+  const [topics, setTopics] = useState<Topic[]>([]);
+  const [showAddTopic, setShowAddTopic] = useState(false);
+  const [newTopicName, setNewTopicName] = useState('');
+
+  useEffect(() => {
+    loadTopics();
+  }, []);
+
+  const loadTopics = async () => {
+    const { data } = await supabase
+      .from('topics')
+      .select('*')
+      .order('is_default', { ascending: false })
+      .order('name');
+
+    if (data) {
+      setTopics(data);
+      if (data.length > 0 && !topic) {
+        setTopic(data[0].name);
+      }
+    }
+  };
+
+  const handleAddTopic = async () => {
+    if (!newTopicName.trim()) return;
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { error } = await supabase
+      .from('topics')
+      .insert([{ name: newTopicName.trim(), user_id: user.id, is_default: false }]);
+
+    if (!error) {
+      setNewTopicName('');
+      setShowAddTopic(false);
+      await loadTopics();
+      setTopic(newTopicName.trim());
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (questionNo.trim() && link.trim() && description.trim()) {
-      onAdd(questionNo.trim(), link.trim(), description.trim(), difficulty);
+    if (questionNo.trim() && link.trim() && description.trim() && topic) {
+      onAdd(questionNo.trim(), link.trim(), description.trim(), difficulty, topic);
       setQuestionNo('');
       setLink('');
       setDescription('');
       setDifficulty('medium');
+      setTopic(topics[0]?.name || '');
     }
   };
 
@@ -81,7 +124,7 @@ export default function AddQuestionModal({ platformName, onClose, onAdd }: AddQu
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Difficulty
             </label>
-            <div className="flex gap-3">
+            <div className="flex gap-3 flex-wrap">
               <label className="flex items-center">
                 <input
                   type="radio"
@@ -113,6 +156,63 @@ export default function AddQuestionModal({ platformName, onClose, onAdd }: AddQu
                 <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm font-medium">Hard</span>
               </label>
             </div>
+          </div>
+          <div className="mb-4">
+            <label htmlFor="topic" className="block text-sm font-medium text-gray-700 mb-2">
+              Topic
+            </label>
+            {!showAddTopic ? (
+              <div className="flex gap-2">
+                <select
+                  id="topic"
+                  value={topic}
+                  onChange={(e) => setTopic(e.target.value)}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                >
+                  {topics.map((t) => (
+                    <option key={t.id} value={t.name}>
+                      {t.name} {t.is_default ? '' : '(Custom)'}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => setShowAddTopic(true)}
+                  className="px-3 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
+                  title="Add custom topic"
+                >
+                  <Plus size={20} />
+                </button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newTopicName}
+                  onChange={(e) => setNewTopicName(e.target.value)}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter custom topic"
+                />
+                <button
+                  type="button"
+                  onClick={handleAddTopic}
+                  className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                  Add
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAddTopic(false);
+                    setNewTopicName('');
+                  }}
+                  className="px-3 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+            )}
           </div>
           <div className="flex gap-3">
             <button

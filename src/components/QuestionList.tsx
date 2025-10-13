@@ -159,6 +159,9 @@ export default function QuestionList({
                   Description
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Topic
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Difficulty
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -190,6 +193,11 @@ export default function QuestionList({
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-700 max-w-md">
                     {question.description}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                      {question.topic}
+                    </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     {getDifficultyBadge(question.difficulty)}
