@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "lazyDSA",
+  "version": "1.0.0",
+  "description": "Track your coding practice across multiple platforms",
+  "permissions": ["storage", "alarms", "notifications"],
+  "host_permissions": ["https://*.supabase.co/*"],
+  "background": {
+    "service_worker": "assets/background.js"
+  },
+  "action": {
+    "default_title": "lazyDSA",
+    "default_popup": "popup.html"
+  }
+}
